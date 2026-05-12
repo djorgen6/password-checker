@@ -104,7 +104,9 @@
     </select>
   </div>
 
-  <div class="bar"><div class="fill" id="fill"></div></div>
+  <div class="bar">
+    <div class="fill" id="fill"></div>
+  </div>
 
   <p id="out" class="mono"></p>
 
@@ -161,14 +163,24 @@ function calc(){
 
   let years = seconds / (60*60*24*365);
 
-  let strength = Math.min(100, entropy * 1.8);
+  // =========================
+  // FIXED ACCURATE STRENGTH MODEL
+  // =========================
+  let logYears = Math.log10(years + 1);
+
+  let strength = Math.min(100, (logYears / 12) * 100);
+  strength = Math.max(0, strength);
 
   fill.style.width = strength + "%";
-  fill.style.background =
-    strength < 40 ? "red" :
-    strength < 70 ? "orange" : "green";
 
-  // ✅ ALWAYS YEARS ONLY
+  if (strength < 35) {
+    fill.style.background = "red";
+  } else if (strength < 70) {
+    fill.style.background = "orange";
+  } else {
+    fill.style.background = "green";
+  }
+
   let displayTime =
     years > 1e6 ? "Millions+ years" :
     Math.round(years) + " years";
@@ -176,7 +188,7 @@ function calc(){
   out.innerHTML =
     `Entropy: ${entropy.toFixed(1)} bits<br>` +
     `Estimated crack time: ${displayTime}`;
-  
+
   updateURL();
 }
 
