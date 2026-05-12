@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <title>Password Strength Checker</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
-
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -71,26 +69,37 @@
   .mono {
     font-family: monospace;
   }
-
-  .warning {
-    color: #b91c1c;
-    font-weight: bold;
-  }
 </style>
 </head>
 
 <body>
 
 <header>
-  <h1>🔐 Industry-Grade Password Checker</h1>
-  <p>Powered by real-world attack simulation (zxcvbn model)</p>
+  <h1>🔐 Password Strength Checker</h1>
+  <p>Real-world strength + crack time estimation</p>
 </header>
 
 <div class="card">
 
   <div class="row">
-    <label>Password:</label>
-    <input type="text" id="pwd" placeholder="Type a password..." style="width:100%; padding:8px;">
+    <label>Password Length: <span id="lenVal">10</span></label>
+    <input type="range" id="len" min="4" max="32" value="10">
+  </div>
+
+  <div class="row">
+    <label><input type="checkbox" id="low" checked> lowercase</label>
+    <label><input type="checkbox" id="up" checked> uppercase</label>
+    <label><input type="checkbox" id="num" checked> numbers</label>
+    <label><input type="checkbox" id="sym"> symbols</label>
+  </div>
+
+  <div class="row">
+    <label>Attacker Model:</label>
+    <select id="attacker">
+      <option value="7">Basic CPU</option>
+      <option value="10" selected>GPU Attack</option>
+      <option value="12">Advanced Cluster</option>
+    </select>
   </div>
 
   <div class="bar">
@@ -99,15 +108,11 @@
 
   <p id="out" class="mono"></p>
 
+  <button onclick="copyLink()">🔗 Copy Share Link</button>
+
   <div class="row">
     <small>
       “A strong password should be at least 12 characters long.” — NIST SP 800-63B
-    </small>
-  </div>
-
-  <div class="row">
-    <small class="warning">
-      ⚠ This model reflects real attack patterns (dictionary, leaks, patterns), not just math entropy.
     </small>
   </div>
 
@@ -115,65 +120,114 @@
 
 <script>
 
-const pwd = document.getElementById("pwd");
+const len = document.getElementById("len");
+const lenVal = document.getElementById("lenVal");
+const low = document.getElementById("low");
+const up = document.getElementById("up");
+const num = document.getElementById("num");
+const sym = document.getElementById("sym");
+const attacker = document.getElementById("attacker");
+
 const fill = document.getElementById("fill");
 const out = document.getElementById("out");
 
-function formatTime(seconds) {
-  if (seconds < 1) return "Instant";
-
-  let minutes = seconds / 60;
-  let hours = minutes / 60;
-  let days = hours / 24;
-  let years = days / 365;
-
-  if (years > 1e9) return "Millions+ years";
-  if (years > 1e6) return "Hundreds of thousands of years";
-  if (years > 1000) return Math.round(years) + " years";
-  if (years > 1) return years.toFixed(1) + " years";
-  if (days > 1) return Math.round(days) + " days";
-  if (hours > 1) return Math.round(hours) + " hours";
-  if (minutes > 1) return Math.round(minutes) + " minutes";
-  return "< 1 minute";
+function charsetSize(){
+  let c = 0;
+  if(low.checked) c += 26;
+  if(up.checked) c += 26;
+  if(num.checked) c += 10;
+  if(sym.checked) c += 32;
+  return Math.max(c,1);
 }
 
 function calc(){
+  let L = +len.value;
+  lenVal.innerText = L;
 
-  let result = zxcvbn(pwd.value || "");
+  let charset = charsetSize();
 
-  // zxcvbn score: 0–4
-  let score = result.score;
+  // =========================
+  // BASE ENTROPY MODEL
+  // =========================
+  let entropy = L * Math.log2(charset);
 
-  // convert score to %
-  let strength = (score / 4) * 100;
+  let speed = Math.pow(10, +attacker.value);
 
+  let total = Math.pow(charset, L);
+  let seconds = total / speed;
+
+  let years = seconds / (60*60*24*365);
+
+  // =========================
+  // REAL-WORLD PENALTY MODEL
+  // =========================
+  let penalty = 0;
+
+  const passwordIsOnlyLower = (low.checked && !up.checked && !num.checked && !sym.checked);
+
+  if (passwordIsOnlyLower) penalty += 20;
+
+  if (L < 10) penalty += (10 - L) * 6;
+
+  // repeated characters (e.g. aaaaaaa)
+  if (/^(.)\1+$/.test("x".repeat(L))) {
+    penalty += 60;
+  }
+
+  // sequential weakness approximation
+  if (L < 8) penalty += 15;
+
+  // =========================
+  // FINAL STRENGTH (FIXED SCALE)
+  // =========================
+  let logYears = Math.log10(years + 1);
+
+  let strength = (logYears / 12) * 100;
+
+  strength = strength - penalty;
+  strength = Math.max(0, Math.min(100, strength));
+
+  // =========================
+  // UI BAR
+  // =========================
   fill.style.width = strength + "%";
 
-  // color logic (real-world style)
-  if (score <= 1) {
+  if (strength < 35) {
     fill.style.background = "red";
-  } else if (score === 2) {
+  } else if (strength < 70) {
     fill.style.background = "orange";
-  } else if (score === 3) {
-    fill.style.background = "#facc15";
   } else {
     fill.style.background = "green";
   }
 
-  let crackTime = result.crack_times_seconds.offline_slow_hashing_1e4_per_second;
+  // =========================
+  // DISPLAY TIME (MORE HONEST)
+  // =========================
+  let displayTime;
 
-  let timeText = formatTime(crackTime);
-
-  let warningText = result.feedback.warning || "";
+  if (strength < 20) {
+    displayTime = "Instant / seconds (guessable)";
+  } else if (years > 1e6) {
+    displayTime = "Millions+ years";
+  } else if (years > 1000) {
+    displayTime = Math.round(years) + " years";
+  } else {
+    displayTime = Math.round(years) + " years";
+  }
 
   out.innerHTML =
-    `Score: ${score}/4<br>` +
-    `Estimated crack time: ${timeText}<br>` +
-    (warningText ? `Warning: ${warningText}` : "");
-
+    `Entropy: ${entropy.toFixed(1)} bits<br>` +
+    `Estimated crack time: ${displayTime}`;
 }
 
-pwd.addEventListener("input", calc);
+function copyLink(){
+  navigator.clipboard.writeText(location.href);
+  alert("Share link copied!");
+}
+
+document.querySelectorAll("input,select").forEach(e=>{
+  e.addEventListener("input", calc);
+});
 
 calc();
 
