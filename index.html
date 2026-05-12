@@ -1,124 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Password Strength Checker</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
-
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f6f7fb;
-    color: #111;
-    padding: 40px;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  header {
-    text-align: center;
-    margin-bottom: 30px;
-  }
-
-  .card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  }
-
-  input[type="range"], input[type="text"] {
-    width: 100%;
-    padding: 8px;
-  }
-
-  .bar {
-    height: 18px;
-    border-radius: 10px;
-    background: #eee;
-    overflow: hidden;
-    margin-top: 10px;
-  }
-
-  .fill {
-    height: 100%;
-    width: 0%;
-    background: red;
-    transition: 0.2s;
-  }
-
-  button {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    background: #2563eb;
-    color: white;
-    margin-top: 10px;
-  }
-
-  small { color: #555; }
-
-  .row { margin: 10px 0; }
-
-  .mono { font-family: monospace; }
-</style>
-</head>
-
-<body>
-
-<header>
-  <h1>🔐 Password Strength Checker</h1>
-  <p>Real-world password strength analysis</p>
-</header>
-
-<div class="card">
-
-  <div class="row">
-    <label>Enter Password:</label>
-    <input type="text" id="pwd" placeholder="Type your password here">
-  </div>
-
-  <div class="row">
-    <label>Password Length Guide: <span id="lenVal">10</span></label>
-    <input type="range" id="len" min="4" max="32" value="10">
-  </div>
-
-  <div class="row">
-    <label><input type="checkbox" id="low" checked> lowercase</label>
-    <label><input type="checkbox" id="up" checked> uppercase</label>
-    <label><input type="checkbox" id="num" checked> numbers</label>
-    <label><input type="checkbox" id="sym"> symbols</label>
-  </div>
-
-  <div class="bar">
-    <div class="fill" id="fill"></div>
-  </div>
-
-  <p id="out" class="mono"></p>
-
-  <button onclick="copyLink()">🔗 Copy Share Link</button>
-
-  <div class="row">
-    <small>
-      “A strong password should be at least 12 characters long.” — NIST SP 800-63B
-    </small>
-  </div>
-
-</div>
-
 <script>
 
-const pwd = document.getElementById("pwd");
 const len = document.getElementById("len");
 const lenVal = document.getElementById("lenVal");
+const low = document.getElementById("low");
+const up = document.getElementById("up");
+const num = document.getElementById("num");
+const sym = document.getElementById("sym");
+const attacker = document.getElementById("attacker");
 
 const fill = document.getElementById("fill");
 const out = document.getElementById("out");
+
+function charsetSize(){
+  let c = 0;
+  if(low.checked) c += 26;
+  if(up.checked) c += 26;
+  if(num.checked) c += 10;
+  if(sym.checked) c += 32;
+  return Math.max(c, 1);
+}
 
 function formatTime(seconds) {
   if (!seconds || seconds < 1) return "Instant";
@@ -139,42 +39,61 @@ function formatTime(seconds) {
 
 function calc(){
 
-  let password = pwd.value || "";
+  // ALWAYS safe numeric state
+  const L = Number(len.value || 10);
+  lenVal.textContent = L;
 
-  let result = zxcvbn(password);
+  const charset = charsetSize();
 
-  let score = result.score;
+  const entropy = L * Math.log2(charset);
 
-  let strength = (score / 4) * 100;
+  const speed = Math.pow(10, Number(attacker.value || 10));
+
+  const total = Math.pow(charset, L);
+  const seconds = total / speed;
+
+  const years = seconds / (60 * 60 * 24 * 365);
+
+  // stable strength model (no flicker)
+  let logYears = Math.log10(years + 1);
+  let strength = Math.min(100, (logYears / 12) * 100);
+  strength = Math.max(0, strength);
 
   fill.style.width = strength + "%";
 
-  if (score <= 1) fill.style.background = "red";
-  else if (score === 2) fill.style.background = "orange";
-  else if (score === 3) fill.style.background = "#facc15";
+  if (strength < 35) fill.style.background = "red";
+  else if (strength < 70) fill.style.background = "orange";
   else fill.style.background = "green";
 
-  let crackSeconds = result.crack_times_seconds.offline_slow_hashing_1e4_per_second;
+  const displayTime =
+    years > 1e6 ? "Millions+ years" :
+    Math.round(years) + " years";
 
   out.innerHTML =
-    `Score: ${score}/4<br>` +
-    `Estimated crack time: ${formatTime(crackSeconds)}`;
+    `Entropy: ${entropy.toFixed(1)} bits<br>` +
+    `Estimated crack time: ${displayTime}`;
 }
 
-function copyLink(){
-  navigator.clipboard.writeText(location.href);
-  alert("Share link copied!");
+// SINGLE unified event handler (prevents race flicker)
+function update(){
+  requestAnimationFrame(calc);
 }
 
-pwd.addEventListener("input", calc);
+// init state FIRST (prevents blank UI on load)
+function init(){
+  lenVal.textContent = len.value;
+  calc();
+}
 
-len.addEventListener("input", ()=>{
-  lenVal.innerText = len.value;
-});
+// listeners
+len.addEventListener("input", update);
+low.addEventListener("change", update);
+up.addEventListener("change", update);
+num.addEventListener("change", update);
+sym.addEventListener("change", update);
+attacker.addEventListener("change", update);
 
-calc();
+// boot safely
+init();
 
 </script>
-
-</body>
-</html>
