@@ -71,26 +71,37 @@
   .mono {
     font-family: monospace;
   }
-
-  .warning {
-    color: #b91c1c;
-    font-weight: bold;
-  }
 </style>
 </head>
 
 <body>
 
 <header>
-  <h1>🔐 Industry-Grade Password Checker</h1>
-  <p>Powered by real-world attack simulation (zxcvbn model)</p>
+  <h1>🔐 Password Strength Checker</h1>
+  <p>See how strong your password is and how long it would take to crack</p>
 </header>
 
 <div class="card">
 
   <div class="row">
-    <label>Password:</label>
-    <input type="text" id="pwd" placeholder="Type a password..." style="width:100%; padding:8px;">
+    <label>Password Length: <span id="lenVal">10</span></label>
+    <input type="range" id="len" min="4" max="32" value="10">
+  </div>
+
+  <div class="row">
+    <label><input type="checkbox" id="low" checked> lowercase</label>
+    <label><input type="checkbox" id="up" checked> uppercase</label>
+    <label><input type="checkbox" id="num" checked> numbers</label>
+    <label><input type="checkbox" id="sym"> symbols</label>
+  </div>
+
+  <div class="row">
+    <label>Attacker Model:</label>
+    <select id="attacker">
+      <option value="7">Basic CPU</option>
+      <option value="10" selected>GPU Attack</option>
+      <option value="12">Advanced Cluster</option>
+    </select>
   </div>
 
   <div class="bar">
@@ -99,6 +110,8 @@
 
   <p id="out" class="mono"></p>
 
+  <button onclick="copyLink()">🔗 Copy Share Link</button>
+
   <div class="row">
     <small>
       “A strong password should be at least 12 characters long.” — NIST SP 800-63B
@@ -106,8 +119,8 @@
   </div>
 
   <div class="row">
-    <small class="warning">
-      ⚠ This model reflects real attack patterns (dictionary, leaks, patterns), not just math entropy.
+    <small>
+      ⚠️ This uses real-world attack modeling (dictionary + pattern detection), not just mathematical entropy.
     </small>
   </div>
 
@@ -115,12 +128,19 @@
 
 <script>
 
-const pwd = document.getElementById("pwd");
+const len = document.getElementById("len");
+const lenVal = document.getElementById("lenVal");
+const low = document.getElementById("low");
+const up = document.getElementById("up");
+const num = document.getElementById("num");
+const sym = document.getElementById("sym");
+const attacker = document.getElementById("attacker");
+
 const fill = document.getElementById("fill");
 const out = document.getElementById("out");
 
 function formatTime(seconds) {
-  if (seconds < 1) return "Instant";
+  if (!seconds || seconds < 1) return "Instant";
 
   let minutes = seconds / 60;
   let hours = minutes / 60;
@@ -139,41 +159,67 @@ function formatTime(seconds) {
 
 function calc(){
 
-  let result = zxcvbn(pwd.value || "");
+  let password = buildPasswordFromUI();
 
-  // zxcvbn score: 0–4
-  let score = result.score;
+  // =========================
+  // INDUSTRY-GRADE ENGINE
+  // =========================
+  let result = zxcvbn(password);
 
-  // convert score to %
+  let score = result.score; // 0–4
+
+  // strength %
   let strength = (score / 4) * 100;
 
+  // bar update
   fill.style.width = strength + "%";
 
-  // color logic (real-world style)
-  if (score <= 1) {
-    fill.style.background = "red";
-  } else if (score === 2) {
-    fill.style.background = "orange";
-  } else if (score === 3) {
-    fill.style.background = "#facc15";
-  } else {
-    fill.style.background = "green";
-  }
+  if (score <= 1) fill.style.background = "red";
+  else if (score === 2) fill.style.background = "orange";
+  else if (score === 3) fill.style.background = "#facc15";
+  else fill.style.background = "green";
 
-  let crackTime = result.crack_times_seconds.offline_slow_hashing_1e4_per_second;
+  // crack time (real model)
+  let crackSeconds = result.crack_times_seconds.offline_slow_hashing_1e4_per_second;
+  let timeText = formatTime(crackSeconds);
 
-  let timeText = formatTime(crackTime);
-
-  let warningText = result.feedback.warning || "";
+  let warning = result.feedback.warning || "";
 
   out.innerHTML =
     `Score: ${score}/4<br>` +
     `Estimated crack time: ${timeText}<br>` +
-    (warningText ? `Warning: ${warningText}` : "");
-
+    (warning ? `Warning: ${warning}` : "");
 }
 
-pwd.addEventListener("input", calc);
+// Build a representative password from UI settings
+function buildPasswordFromUI(){
+  let base = "a".repeat(+len.value);
+
+  if (up.checked) base = "A".repeat(+len.value);
+  if (num.checked) base = "1".repeat(+len.value);
+  if (sym.checked) base = "!".repeat(+len.value);
+
+  // mixed fallback if multiple selected
+  if (low.checked && up.checked) base = "Aa".repeat(Math.ceil(+len.value/2)).slice(0,+len.value);
+  if (low.checked && num.checked) base = "a1".repeat(Math.ceil(+len.value/2)).slice(0,+len.value);
+  if (low.checked && sym.checked) base = "a!".repeat(Math.ceil(+len.value/2)).slice(0,+len.value);
+
+  return base;
+}
+
+function copyLink(){
+  navigator.clipboard.writeText(location.href);
+  alert("Share link copied!");
+}
+
+// UI listeners
+document.querySelectorAll("input,select").forEach(e=>{
+  e.addEventListener("input", calc);
+});
+
+len.addEventListener("input", ()=>{
+  lenVal.innerText = len.value;
+});
 
 calc();
 
