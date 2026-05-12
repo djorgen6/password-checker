@@ -1,99 +1,98 @@
 <script>
 
-const len = document.getElementById("len");
-const lenVal = document.getElementById("lenVal");
-const low = document.getElementById("low");
-const up = document.getElementById("up");
-const num = document.getElementById("num");
-const sym = document.getElementById("sym");
-const attacker = document.getElementById("attacker");
+window.addEventListener("DOMContentLoaded", () => {
 
-const fill = document.getElementById("fill");
-const out = document.getElementById("out");
+  const len = document.getElementById("len");
+  const lenVal = document.getElementById("lenVal");
+  const low = document.getElementById("low");
+  const up = document.getElementById("up");
+  const num = document.getElementById("num");
+  const sym = document.getElementById("sym");
+  const attacker = document.getElementById("attacker");
 
-function charsetSize(){
-  let c = 0;
-  if(low.checked) c += 26;
-  if(up.checked) c += 26;
-  if(num.checked) c += 10;
-  if(sym.checked) c += 32;
-  return Math.max(c, 1);
-}
+  const fill = document.getElementById("fill");
+  const out = document.getElementById("out");
 
-function formatTime(seconds) {
-  if (!seconds || seconds < 1) return "Instant";
+  function charsetSize(){
+    let c = 0;
+    if(low.checked) c += 26;
+    if(up.checked) c += 26;
+    if(num.checked) c += 10;
+    if(sym.checked) c += 32;
+    return Math.max(c, 1);
+  }
 
-  let minutes = seconds / 60;
-  let hours = minutes / 60;
-  let days = hours / 24;
-  let years = days / 365;
+  function formatTime(seconds) {
+    if (!seconds || seconds < 1) return "Instant";
 
-  if (years > 1e9) return "Millions+ years";
-  if (years > 1000) return Math.round(years) + " years";
-  if (years > 1) return years.toFixed(1) + " years";
-  if (days > 1) return Math.round(days) + " days";
-  if (hours > 1) return Math.round(hours) + " hours";
-  if (minutes > 1) return Math.round(minutes) + " minutes";
-  return "< 1 minute";
-}
+    let minutes = seconds / 60;
+    let hours = minutes / 60;
+    let days = hours / 24;
+    let years = days / 365;
 
-function calc(){
+    if (years > 1e9) return "Millions+ years";
+    if (years > 1000) return Math.round(years) + " years";
+    if (years > 1) return years.toFixed(1) + " years";
+    if (days > 1) return Math.round(days) + " days";
+    if (hours > 1) return Math.round(hours) + " hours";
+    if (minutes > 1) return Math.round(minutes) + " minutes";
+    return "< 1 minute";
+  }
 
-  // ALWAYS safe numeric state
-  const L = Number(len.value || 10);
-  lenVal.textContent = L;
+  function calc(){
 
-  const charset = charsetSize();
+    // HARD SAFETY CHECK (prevents blank page crashes)
+    if (!len || !lenVal || !fill || !out) return;
 
-  const entropy = L * Math.log2(charset);
+    const L = parseInt(len.value || "10", 10);
+    lenVal.textContent = L;
 
-  const speed = Math.pow(10, Number(attacker.value || 10));
+    const charset = charsetSize();
 
-  const total = Math.pow(charset, L);
-  const seconds = total / speed;
+    const entropy = L * Math.log2(charset);
 
-  const years = seconds / (60 * 60 * 24 * 365);
+    const speed = Math.pow(10, parseInt(attacker.value || "10", 10));
 
-  // stable strength model (no flicker)
-  let logYears = Math.log10(years + 1);
-  let strength = Math.min(100, (logYears / 12) * 100);
-  strength = Math.max(0, strength);
+    const total = Math.pow(charset, L);
+    const seconds = total / speed;
 
-  fill.style.width = strength + "%";
+    const years = seconds / (60 * 60 * 24 * 365);
 
-  if (strength < 35) fill.style.background = "red";
-  else if (strength < 70) fill.style.background = "orange";
-  else fill.style.background = "green";
+    let logYears = Math.log10(years + 1);
+    let strength = Math.min(100, (logYears / 12) * 100);
+    strength = Math.max(0, strength);
 
-  const displayTime =
-    years > 1e6 ? "Millions+ years" :
-    Math.round(years) + " years";
+    fill.style.width = strength + "%";
 
-  out.innerHTML =
-    `Entropy: ${entropy.toFixed(1)} bits<br>` +
-    `Estimated crack time: ${displayTime}`;
-}
+    if (strength < 35) fill.style.background = "red";
+    else if (strength < 70) fill.style.background = "orange";
+    else fill.style.background = "green";
 
-// SINGLE unified event handler (prevents race flicker)
-function update(){
-  requestAnimationFrame(calc);
-}
+    const displayTime =
+      years > 1e6 ? "Millions+ years" :
+      Math.round(years) + " years";
 
-// init state FIRST (prevents blank UI on load)
-function init(){
+    out.innerHTML =
+      `Entropy: ${entropy.toFixed(1)} bits<br>` +
+      `Estimated crack time: ${displayTime}`;
+  }
+
+  function update(){
+    requestAnimationFrame(calc);
+  }
+
+  // INIT (safe order)
   lenVal.textContent = len.value;
+
+  len.addEventListener("input", update);
+  low.addEventListener("change", update);
+  up.addEventListener("change", update);
+  num.addEventListener("change", update);
+  sym.addEventListener("change", update);
+  attacker.addEventListener("change", update);
+
   calc();
-}
 
-// listeners
-len.addEventListener("input", update);
-low.addEventListener("change", update);
-up.addEventListener("change", update);
-num.addEventListener("change", update);
-sym.addEventListener("change", update);
-attacker.addEventListener("change", update);
-
-// boot safely
-init();
+});
 
 </script>
