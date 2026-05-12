@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Secure Tools: DNS + Password Checker</title>
+<title>Password Strength Checker</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
 
@@ -12,19 +12,15 @@
     margin: 0;
     background: #f6f7fb;
     color: #111;
+    padding: 40px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   header {
-    padding: 40px;
-    background: #111827;
-    color: white;
     text-align: center;
-  }
-
-  section {
-    max-width: 900px;
-    margin: auto;
-    padding: 30px;
+    margin-bottom: 30px;
   }
 
   .card {
@@ -33,19 +29,6 @@
     border-radius: 12px;
     margin-bottom: 25px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-
-  .box {
-    padding: 15px;
-    background: #f3f4f6;
-    border-radius: 10px;
-    text-align: center;
   }
 
   input[type="range"] {
@@ -74,6 +57,7 @@
     cursor: pointer;
     background: #2563eb;
     color: white;
+    margin-top: 10px;
   }
 
   small {
@@ -93,38 +77,11 @@
 <body>
 
 <header>
-  <h1>Secure Internet Tools</h1>
-  <p>DNS Optimization + Password Strength Analyzer</p>
+  <h1>🔐 Password Strength Checker</h1>
+  <p>See how strong your password is and how long it would take to crack</p>
 </header>
 
-<section>
-
-<!-- ================= DNS SECTION ================= -->
 <div class="card">
-  <h2>⚡ Faster & More Private Internet (DNS Upgrade)</h2>
-
-  <p><b>DNS is like the phonebook of the internet.</b></p>
-  <p>
-    When you type a website, DNS translates it into an IP address your device can use.
-    We replace your ISP’s default DNS with a faster, more private option like Cloudflare.
-  </p>
-
-  <div class="grid">
-    <div class="box">⚡ Faster Loading</div>
-    <div class="box">🔒 More Privacy</div>
-    <div class="box">🛡️ More Reliability</div>
-  </div>
-
-  <p style="margin-top:15px;">
-    Your ISP DNS → Slow + tracked<br>
-    Cloudflare DNS → Fast + private
-  </p>
-</div>
-
-
-<!-- ================= PASSWORD TOOL ================= -->
-<div class="card">
-  <h2>🔐 Password Strength & Crack Time Tool</h2>
 
   <div class="row">
     <label>Password Length: <span id="lenVal">10</span></label>
@@ -161,12 +118,11 @@
 
   <div class="row">
     <small>
-      ⚠️ This is a theoretical estimate. Real-world attacks may be significantly faster using leaked passwords or pattern-based attacks.
+      ⚠️ Theoretical estimate only. Real-world attacks may be significantly faster using leaked passwords or pattern-based attacks.
     </small>
   </div>
-</div>
 
-</section>
+</div>
 
 <script>
 
@@ -196,17 +152,15 @@ function calc(){
 
   let charset = charsetSize();
 
-  // entropy model
   let entropy = L * Math.log2(charset);
 
-  // attacker guesses/sec (log scale from dropdown)
   let speed = Math.pow(10, +attacker.value);
 
   let total = Math.pow(charset, L);
   let seconds = total / speed;
+
   let years = seconds / (60*60*24*365);
 
-  // strength
   let strength = Math.min(100, entropy * 1.8);
 
   fill.style.width = strength + "%";
@@ -214,11 +168,10 @@ function calc(){
     strength < 40 ? "red" :
     strength < 70 ? "orange" : "green";
 
+  // ✅ ALWAYS YEARS ONLY
   let displayTime =
-    years > 1e9 ? "Millions+ years" :
-    years > 1e6 ? "Hundreds of thousands of years" :
-    years > 1e3 ? Math.round(years) + " years" :
-    Math.round(years * 365) + " days";
+    years > 1e6 ? "Millions+ years" :
+    Math.round(years) + " years";
 
   out.innerHTML =
     `Entropy: ${entropy.toFixed(1)} bits<br>` +
