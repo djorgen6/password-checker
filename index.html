@@ -1,3 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Password Strength Checker</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f6f7fb;
+    color: #111;
+    padding: 40px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  input[type="range"] {
+    width: 100%;
+  }
+
+  .bar {
+    height: 18px;
+    border-radius: 10px;
+    background: #eee;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  .fill {
+    height: 100%;
+    width: 0%;
+    background: red;
+    transition: 0.25s;
+  }
+
+  button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+    margin-top: 10px;
+  }
+
+  small {
+    color: #555;
+  }
+
+  .row {
+    margin: 10px 0;
+  }
+
+  .mono {
+    font-family: monospace;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🔐 Password Strength Checker</h1>
+  <p>Real-world strength + crack time estimation</p>
+</header>
+
+<div class="card">
+
+  <div class="row">
+    <label>Password Length: <span id="lenVal">10</span></label>
+    <input type="range" id="len" min="4" max="32" value="10">
+  </div>
+
+  <div class="row">
+    <label><input type="checkbox" id="low" checked> lowercase</label>
+    <label><input type="checkbox" id="up" checked> uppercase</label>
+    <label><input type="checkbox" id="num" checked> numbers</label>
+    <label><input type="checkbox" id="sym"> symbols</label>
+  </div>
+
+  <div class="row">
+    <label>Attacker Model:</label>
+    <select id="attacker">
+      <option value="7">Basic CPU</option>
+      <option value="10" selected>GPU Attack</option>
+      <option value="12">Advanced Cluster</option>
+    </select>
+  </div>
+
+  <div class="bar">
+    <div class="fill" id="fill"></div>
+  </div>
+
+  <p id="out" class="mono"></p>
+
+  <button onclick="copyLink()">🔗 Copy Share Link</button>
+
+  <div class="row">
+    <small>
+      “A strong password should be at least 12 characters long.” — NIST SP 800-63B
+    </small>
+  </div>
+
+</div>
+
 <script>
 
 const len = document.getElementById("len");
@@ -17,83 +137,101 @@ function charsetSize(){
   if(up.checked) c += 26;
   if(num.checked) c += 10;
   if(sym.checked) c += 32;
-  return Math.max(c, 1);
-}
-
-function formatTime(seconds) {
-  if (!seconds || seconds < 1) return "Instant";
-
-  let minutes = seconds / 60;
-  let hours = minutes / 60;
-  let days = hours / 24;
-  let years = days / 365;
-
-  if (years > 1e9) return "Millions+ years";
-  if (years > 1000) return Math.round(years) + " years";
-  if (years > 1) return years.toFixed(1) + " years";
-  if (days > 1) return Math.round(days) + " days";
-  if (hours > 1) return Math.round(hours) + " hours";
-  if (minutes > 1) return Math.round(minutes) + " minutes";
-  return "< 1 minute";
+  return Math.max(c,1);
 }
 
 function calc(){
+  let L = +len.value;
+  lenVal.innerText = L;
 
-  // ALWAYS safe numeric state
-  const L = Number(len.value || 10);
-  lenVal.textContent = L;
+  let charset = charsetSize();
 
-  const charset = charsetSize();
+  // =========================
+  // BASE ENTROPY MODEL
+  // =========================
+  let entropy = L * Math.log2(charset);
 
-  const entropy = L * Math.log2(charset);
+  let speed = Math.pow(10, +attacker.value);
 
-  const speed = Math.pow(10, Number(attacker.value || 10));
+  let total = Math.pow(charset, L);
+  let seconds = total / speed;
 
-  const total = Math.pow(charset, L);
-  const seconds = total / speed;
+  let years = seconds / (60*60*24*365);
 
-  const years = seconds / (60 * 60 * 24 * 365);
+  // =========================
+  // REAL-WORLD PENALTY MODEL
+  // =========================
+  let penalty = 0;
 
-  // stable strength model (no flicker)
+  const passwordIsOnlyLower = (low.checked && !up.checked && !num.checked && !sym.checked);
+
+  if (passwordIsOnlyLower) penalty += 20;
+
+  if (L < 10) penalty += (10 - L) * 6;
+
+  // repeated characters (e.g. aaaaaaa)
+  if (/^(.)\1+$/.test("x".repeat(L))) {
+    penalty += 60;
+  }
+
+  // sequential weakness approximation
+  if (L < 8) penalty += 15;
+
+  // =========================
+  // FINAL STRENGTH (FIXED SCALE)
+  // =========================
   let logYears = Math.log10(years + 1);
-  let strength = Math.min(100, (logYears / 12) * 100);
-  strength = Math.max(0, strength);
 
+  let strength = (logYears / 12) * 100;
+
+  strength = strength - penalty;
+  strength = Math.max(0, Math.min(100, strength));
+
+  // =========================
+  // UI BAR
+  // =========================
   fill.style.width = strength + "%";
 
-  if (strength < 35) fill.style.background = "red";
-  else if (strength < 70) fill.style.background = "orange";
-  else fill.style.background = "green";
+  if (strength < 35) {
+    fill.style.background = "red";
+  } else if (strength < 70) {
+    fill.style.background = "orange";
+  } else {
+    fill.style.background = "green";
+  }
 
-  const displayTime =
-    years > 1e6 ? "Millions+ years" :
-    Math.round(years) + " years";
+  // =========================
+  // DISPLAY TIME (MORE HONEST)
+  // =========================
+  let displayTime;
+
+  if (strength < 20) {
+    displayTime = "Instant / seconds (guessable)";
+  } else if (years > 1e6) {
+    displayTime = "Millions+ years";
+  } else if (years > 1000) {
+    displayTime = Math.round(years) + " years";
+  } else {
+    displayTime = Math.round(years) + " years";
+  }
 
   out.innerHTML =
     `Entropy: ${entropy.toFixed(1)} bits<br>` +
     `Estimated crack time: ${displayTime}`;
 }
 
-// SINGLE unified event handler (prevents race flicker)
-function update(){
-  requestAnimationFrame(calc);
+function copyLink(){
+  navigator.clipboard.writeText(location.href);
+  alert("Share link copied!");
 }
 
-// init state FIRST (prevents blank UI on load)
-function init(){
-  lenVal.textContent = len.value;
-  calc();
-}
+document.querySelectorAll("input,select").forEach(e=>{
+  e.addEventListener("input", calc);
+});
 
-// listeners
-len.addEventListener("input", update);
-low.addEventListener("change", update);
-up.addEventListener("change", update);
-num.addEventListener("change", update);
-sym.addEventListener("change", update);
-attacker.addEventListener("change", update);
-
-// boot safely
-init();
+calc();
 
 </script>
+
+</body>
+</html>
