@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Secure Tools: DNS + Password Checker</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f6f7fb;
+    color: #111;
+  }
+
+  header {
+    padding: 40px;
+    background: #111827;
+    color: white;
+    text-align: center;
+  }
+
+  section {
+    max-width: 900px;
+    margin: auto;
+    padding: 30px;
+  }
+
+  .card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .box {
+    padding: 15px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  input[type="range"] {
+    width: 100%;
+  }
+
+  .bar {
+    height: 18px;
+    border-radius: 10px;
+    background: #eee;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  .fill {
+    height: 100%;
+    width: 0%;
+    background: red;
+    transition: 0.3s;
+  }
+
+  button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+  }
+
+  small {
+    color: #555;
+  }
+
+  .row {
+    margin: 10px 0;
+  }
+
+  .mono {
+    font-family: monospace;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Secure Internet Tools</h1>
+  <p>DNS Optimization + Password Strength Analyzer</p>
+</header>
+
+<section>
+
+<!-- ================= DNS SECTION ================= -->
+<div class="card">
+  <h2>⚡ Faster & More Private Internet (DNS Upgrade)</h2>
+
+  <p><b>DNS is like the phonebook of the internet.</b></p>
+  <p>
+    When you type a website, DNS translates it into an IP address your device can use.
+    We replace your ISP’s default DNS with a faster, more private option like Cloudflare.
+  </p>
+
+  <div class="grid">
+    <div class="box">⚡ Faster Loading</div>
+    <div class="box">🔒 More Privacy</div>
+    <div class="box">🛡️ More Reliability</div>
+  </div>
+
+  <p style="margin-top:15px;">
+    Your ISP DNS → Slow + tracked<br>
+    Cloudflare DNS → Fast + private
+  </p>
+</div>
+
+
+<!-- ================= PASSWORD TOOL ================= -->
+<div class="card">
+  <h2>🔐 Password Strength & Crack Time Tool</h2>
+
+  <div class="row">
+    <label>Password Length: <span id="lenVal">10</span></label>
+    <input type="range" id="len" min="4" max="32" value="10">
+  </div>
+
+  <div class="row">
+    <label><input type="checkbox" id="low" checked> lowercase</label>
+    <label><input type="checkbox" id="up" checked> uppercase</label>
+    <label><input type="checkbox" id="num" checked> numbers</label>
+    <label><input type="checkbox" id="sym"> symbols</label>
+  </div>
+
+  <div class="row">
+    <label>Attacker Model:</label>
+    <select id="attacker">
+      <option value="7">Basic CPU</option>
+      <option value="10" selected>GPU Attack</option>
+      <option value="12">Advanced Cluster</option>
+    </select>
+  </div>
+
+  <div class="bar"><div class="fill" id="fill"></div></div>
+
+  <p id="out" class="mono"></p>
+
+  <button onclick="copyLink()">🔗 Copy Share Link</button>
+
+  <div class="row">
+    <small>
+      “A strong password should be at least 12 characters long.” — NIST SP 800-63B
+    </small>
+  </div>
+
+  <div class="row">
+    <small>
+      ⚠️ This is a theoretical estimate. Real-world attacks may be significantly faster using leaked passwords or pattern-based attacks.
+    </small>
+  </div>
+</div>
+
+</section>
+
+<script>
+
+const len = document.getElementById("len");
+const lenVal = document.getElementById("lenVal");
+const low = document.getElementById("low");
+const up = document.getElementById("up");
+const num = document.getElementById("num");
+const sym = document.getElementById("sym");
+const attacker = document.getElementById("attacker");
+
+const fill = document.getElementById("fill");
+const out = document.getElementById("out");
+
+function charsetSize(){
+  let c = 0;
+  if(low.checked) c += 26;
+  if(up.checked) c += 26;
+  if(num.checked) c += 10;
+  if(sym.checked) c += 32;
+  return Math.max(c,1);
+}
+
+function calc(){
+  let L = +len.value;
+  lenVal.innerText = L;
+
+  let charset = charsetSize();
+
+  // entropy model
+  let entropy = L * Math.log2(charset);
+
+  // attacker guesses/sec (log scale from dropdown)
+  let speed = Math.pow(10, +attacker.value);
+
+  let total = Math.pow(charset, L);
+  let seconds = total / speed;
+  let years = seconds / (60*60*24*365);
+
+  // strength
+  let strength = Math.min(100, entropy * 1.8);
+
+  fill.style.width = strength + "%";
+  fill.style.background =
+    strength < 40 ? "red" :
+    strength < 70 ? "orange" : "green";
+
+  let displayTime =
+    years > 1e9 ? "Millions+ years" :
+    years > 1e6 ? "Hundreds of thousands of years" :
+    years > 1e3 ? Math.round(years) + " years" :
+    Math.round(years * 365) + " days";
+
+  out.innerHTML =
+    `Entropy: ${entropy.toFixed(1)} bits<br>` +
+    `Estimated crack time: ${displayTime}`;
+  
+  updateURL();
+}
+
+function updateURL(){
+  const params = new URLSearchParams();
+  params.set("len", len.value);
+  params.set("low", low.checked);
+  params.set("up", up.checked);
+  params.set("num", num.checked);
+  params.set("sym", sym.checked);
+  params.set("atk", attacker.value);
+
+  history.replaceState(null, "", "?" + params.toString());
+}
+
+function loadFromURL(){
+  const p = new URLSearchParams(location.search);
+
+  if(p.get("len")) len.value = p.get("len");
+  if(p.get("low")) low.checked = p.get("low") === "true";
+  if(p.get("up")) up.checked = p.get("up") === "true";
+  if(p.get("num")) num.checked = p.get("num") === "true";
+  if(p.get("sym")) sym.checked = p.get("sym") === "true";
+  if(p.get("atk")) attacker.value = p.get("atk");
+}
+
+function copyLink(){
+  navigator.clipboard.writeText(location.href);
+  alert("Share link copied!");
+}
+
+document.querySelectorAll("input,select").forEach(e=>{
+  e.addEventListener("input", calc);
+});
+
+loadFromURL();
+calc();
+
+</script>
+
+</body>
+</html>
