@@ -1,46 +1,44 @@
 # 🔐 Password Strength Checker
 
-A browser-based cybersecurity project exploring password strength, entropy, and theoretical password-cracking times.
+An interactive password security tool built to explore password strength, entropy, and theoretical password-cracking times.
 
 **Live Demo:** https://djorgen6.github.io/password-checker/
 
 ## About the Project
 
-I built this project to explore password security and demonstrate how password length, character variety, and attacker computing power influence password strength.
+I created this project to apply programming to practical cybersecurity concepts and better understand what makes passwords difficult to crack.
 
-The tool allows users to configure a theoretical password and see how its complexity affects entropy and estimated cracking time under different attacker models.
-
-The goal was to turn cybersecurity concepts into something interactive and easy to understand.
+The tool allows users to adjust password length, select different character types, and compare estimated cracking times against different attacker models. The goal was to make concepts like password entropy and brute-force attacks easier to understand through an interactive demonstration.
 
 ## Features
 
 - **Password Length:** Adjustable from 4 to 32 characters.
 - **Character Selection:** Enable or disable lowercase letters, uppercase letters, numbers, and symbols.
-- **Attacker Models:** Compare estimated cracking times against a basic CPU, GPU attack, or advanced computing cluster.
-- **Entropy Calculation:** Estimates password entropy in bits using the available character pool and password length.
-- **Strength Indicator:** Displays a visual strength bar based on the calculated cracking-time estimate.
-- **Shareable Configurations:** Generates shareable URLs that preserve the selected settings.
+- **Attacker Models:** Compare estimated cracking times using a Basic CPU, GPU Attack, or Advanced Cluster.
+- **Entropy Calculation:** Estimates password entropy in bits based on length and available character combinations.
+- **Strength Indicator:** Displays a visual strength bar based on the estimated cracking time.
+- **Shareable Configurations:** Generates URLs that preserve the selected settings, allowing others to view the same configuration.
 
 ## Technologies Used
 
-- **HTML5** – Page structure and user interface.
+- **HTML5** – Page structure, content, and interactive controls.
 - **CSS3** – Styling, layout, and visual components.
-- **JavaScript** – Password calculations, interactive controls, and URL parameter handling.
+- **JavaScript** – Password calculations, event handling, and interactive functionality.
 - **URLSearchParams API** – Saves and restores configurations through URL parameters.
 - **GitHub Pages** – Hosting and deployment.
 
-The project uses a single `index.html` file containing the HTML, CSS, and JavaScript, without a separate backend or framework.
+The project is contained in a single `index.html` file, with HTML, CSS, and JavaScript together. It does not require a separate backend or framework. An external zxcvbn library is included through a CDN, although the current calculations use a separate custom implementation.
 
 ## How It Works
 
-The checker uses a simplified mathematical model to estimate password security.
+The checker uses a simplified mathematical model to estimate password complexity and theoretical cracking times.
 
-1. **Character Pool:** Calculates the possible character combinations based on the selected character types.
-2. **Entropy:** Estimates theoretical entropy using:
+1. **Character Pool:** Determines the number of possible characters based on the selected character types.
+2. **Entropy:** Estimates password entropy using:
 
    `Entropy = Password Length × log₂(Character Pool)`
 
-3. **Attacker Model:** Assigns a theoretical guessing speed based on the selected attacker:
+3. **Attacker Model:** Assigns an assumed guessing speed to the selected attacker:
    - Basic CPU: 10⁷ guesses/second
    - GPU Attack: 10¹⁰ guesses/second
    - Advanced Cluster: 10¹² guesses/second
@@ -49,31 +47,28 @@ The checker uses a simplified mathematical model to estimate password security.
 
 ## Development & AI Assistance
 
-This project was developed with assistance from **ChatGPT (OpenAI)** around the time of its original development and GitHub publication.
+I developed this project with assistance from **ChatGPT (OpenAI)** around the time of its original development and GitHub publication.
 
-ChatGPT was used as a development aid for working through JavaScript logic, mathematical calculations, implementation ideas, and troubleshooting. The project was built iteratively, with the code and functionality refined throughout development.
+I used ChatGPT as a development aid for JavaScript implementation, mathematical calculations, troubleshooting, and refining functionality. Development was an iterative process of working through ideas, testing implementations, and improving the tool.
 
-AI assistance was used as a tool to support the development process, rather than as a replacement for understanding the underlying concepts.
+## Limitations & Accuracy
 
-## Security Considerations
+This project is primarily a learning and demonstration tool, not a professional password auditing application. Its calculations are simplified theoretical estimates and may not accurately represent real-world password security or attack conditions.
 
-**Accuracy Disclaimer:** This project is intended primarily as a learning and demonstration tool, not a definitive password security evaluator. Its entropy calculations and estimated cracking times are simplified theoretical models and may not accurately represent real-world password security or attack conditions. Results should be treated as educational estimates rather than guarantees.
+It does not account for every attack method, including dictionary attacks, leaked credentials, password reuse, or predictable patterns. Actual password security depends on more than character variety alone.
 
-This project is an educational demonstration, not a production-grade password auditing tool.
-
-Cracking times are theoretical estimates based on assumed guessing speeds and do not account for every real-world attack technique, such as dictionary attacks, leaked credentials, password reuse, or advanced pattern recognition.
-
-Actual password security depends on more than character variety alone. Longer, unique passwords and passphrases are generally preferable.
+Results should be treated as educational estimates, not guarantees of security.
 
 **Never enter passwords that you actually use.**
 
 ## Purpose & Takeaways
 
-This project provided an opportunity to apply programming to practical cybersecurity concepts, particularly password entropy, brute-force attacks, computational limitations, and security awareness.
+This project gave me an opportunity to explore password security through hands-on development while applying concepts such as entropy, brute-force attacks, and computational complexity.
 
-It also demonstrates how basic web technologies can be used to build an interactive security-focused application and how AI tools like ChatGPT can assist with learning, development, and problem-solving.
+It also demonstrates how fundamental web technologies can be used to build an interactive cybersecurity application and how AI tools can assist with learning, development, and problem-solving.
 
 ---
 
-**Developed by Daniel Jorgensen**  
-GitHub: [@djorgen6](https://github.com/djorgen6)
+**Developed by Daniel Jorgensen**
+
+[@djorgen6](https://github.com/djorgen6)
